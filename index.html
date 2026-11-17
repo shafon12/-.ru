@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ОТК: Хроники Инспектора Качества</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --card: #0f172a;
+      --card-border: #1e293b;
+      --cyan: #38bdf8;
+      --yellow: #facc15;
+      --green: #22c55e;
+      --red: #ef4444;
+      --purple: #c084fc;
+      --uv-glow: #a855f7;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- КАТ-СЦЕНА / СЮЖЕТНЫЙ ПРОЛОГ --- */
+    #storyModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.98);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .story-bubble {
+      max-width: 380px;
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.25);
+      position: relative;
+    }
+
+    .speaker-avatar {
+      font-size: 58px;
+      margin-bottom: 12px;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .speaker-name {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .story-text {
+      font-size: 14px;
+      color: #cbd5e1;
+      line-height: 1.55;
+      min-height: 85px;
+      margin: 12px 0 20px 0;
+      text-align: left;
+    }
+
+    .story-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+    }
+
+    /* --- ВЕРХНИЙ БАР --- */
+    .top-bar {
+      height: 56px;
+      background: var(--card);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: 58%;
+    }
+
+    .user-icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .user-title {
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-rank {
+      font-size: 10px;
+      color: var(--cyan);
+      font-weight: 700;
+    }
+
+    .salary-box {
+      text-align: right;
+    }
+
+    .salary-val {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--green);
+    }
+
+    .career-stage {
+      font-size: 10px;
+      color: var(--yellow);
+    }
+
+    /* --- КОНТЕНТНАЯ ОБЛАСТЬ --- */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 440px;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* РЕГЛАМЕНТ ГОСТ */
+    .spec-card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-left: 4px solid var(--yellow);
+      border-radius: 14px;
+      padding: 10px 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .spec-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--yellow);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .spec-body {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+
+    .spec-body b {
+      color: #f1f5f9;
+    }
+
+    /* ИСПЫТАТЕЛЬНЫЙ СТОЛ */
+    .test-bench {
+      width: 100%;
+      background: radial-gradient(circle at center, #131c31 0%, #0a0f1d 100%);
+      border: 2px solid var(--card-border);
+      border-radius: 18px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: all 0.3s ease;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8);
+    }
+
+    .test-bench.mode-uv {
+      background: radial-gradient(circle at center, #2e1065 0%, #0f051d 100%);
+      border-color: var(--uv-glow);
+      box-shadow: inset 0 0 30px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.3);
+    }
+
+    .test-bench.mode-xray {
+      background: radial-gradient(circle at center, #083344 0%, #04131a 100%);
+      border-color: #06b6d4;
+      box-shadow: inset 0 0 30px rgba(6, 182, 212, 0.4), 0 0 20px rgba(6, 182, 212, 0.3);
+    }
+
+    .bench-top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .product-box {
+      width: 190px;
+      height: 190px;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* ПАНЕЛЬ ПРИБОРОВ */
+    .tools-panel {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tool-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      border-radius: 10px;
+      padding: 8px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s;
+    }
+
+    .tool-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+
+    .tool-btn.locked {
+      opacity: 0.4;
+      filter: grayscale(1);
+    }
+
+    /* ДАТЧИКИ ИЗМЕРЕНИЙ */
+    .telemetry-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .telemetry-box {
+      background: #090e1a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .tele-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .tele-val {
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--cyan);
+      margin-top: 2px;
+      font-family: monospace;
+    }
+
+    /* РЕШЕНИЕ ИНСПЕКТОРА */
+    .action-row {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+    }
+
+    .stamp-btn {
+      flex: 1;
+      padding: 13px 8px;
+      border: none;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: transform 0.1s;
+    }
+
+    .stamp-btn:active {
+      transform: scale(0.96);
+    }
+
+    .stamp-pass {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+    }
+
+    .stamp-reject {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+    }
+
+    /* РЕЖИМ 2: МАГАЗИН ОБОРУДОВАНИЯ */
+    .shop-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .shop-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shop-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .shop-icon {
+      font-size: 28px;
+    }
+
+    .shop-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .shop-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .buy-btn {
+      background: var(--cyan);
+      color: #0b111e;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .buy-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      filter: grayscale(1);
+    }
+
+    /* РЕЖИМ 3: КАРЬЕРА */
+    .career-card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 8px;
+    }
+
+    .career-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--yellow);
+      margin-bottom: 6px;
+    }
+
+    .career-text {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* МОДАЛЬНЫЙ АКТ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.15s ease;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 330px;
+      background: var(--card);
+      border: 2px solid var(--card-border);
+      border-radius: 18px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .modal-icon { font-size: 42px; margin-bottom: 6px; }
+    .modal-title { font-size: 17px; font-weight: 900; margin-bottom: 8px; }
+    .modal-title.win { color: var(--green); }
+    .modal-title.fail { color: var(--red); }
+    .modal-desc {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+      text-align: left;
+      background: #090e1a;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+    }
+
+    .modal-confirm-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--cyan);
+      color: #070b14;
+      border: none;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    /* НИЖНЯЯ НАВИГАЦИЯ */
+    .bottom-nav {
+      height: 60px;
+      background: var(--card);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .nav-item {
+      flex: 1;
+      height: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: var(--cyan);
+    }
+
+    .nav-item .icon { font-size: 20px; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- СЮЖЕТНЫЙ ПРОЛОГ -->
+  <div id="storyModal">
+    <div class="story-bubble">
+      <div class="speaker-avatar" id="storyAvatar">👨‍🔬</div>
+      <div class="speaker-name" id="storySpeaker">Михалыч (Главный Инженер ОТК)</div>
+      <div class="story-text" id="storyText">
+        «Ну что, боец? Добро пожаловать в лабораторию качества "КВАНТ-ТЕХ"! Думаешь, контроль качества — это просто штампики ставить? Как бы не так!»
+      </div>
+      <button class="story-btn" id="storyNextBtn" onclick="advanceStory()">Слушать дальше ➔</button>
+    </div>
+  </div>
+
+  <!-- ШАПКА -->
+  <header class="top-bar">
+    <div class="user-profile">
+      <div class="user-icon">🔬</div>
+      <div style="min-width: 0;">
+        <div class="user-title" id="userName">Инспектор</div>
+        <div class="user-rank" id="userRank">Стажёр ОТК</div>
+      </div>
+    </div>
+    <div class="salary-box">
+      <div class="salary-val" id="moneyDisplay">1 000 ₽</div>
+      <div class="career-stage" id="stageDisplay">Цех №1: Смартфоны</div>
+    </div>
+  </header>
+
+  <!-- КОНТЕНТ -->
+  <main class="content-area">
+
+    <!-- 1. ИНСПЕКЦИОННЫЙ ЦЕХ -->
+    <div class="screen active" id="screen-bench">
+
+      <div class="spec-card">
+        <div class="spec-title">
+          <span>📋 ТЕХНИЧЕСКИЙ РЕГЛАМЕНТ / ТУ</span>
+          <span id="productTitle">ПЛАТА СМАРТФОНА</span>
+        </div>
+        <div class="spec-body" id="specBody">
+          Загрузка технических условий...
+        </div>
+      </div>
+
+      <div class="test-bench" id="testBench">
+        <div class="bench-top">
+          <span>🔬 СКАН-СТЕНД v3.4</span>
+          <span id="batchLabel" style="color:var(--cyan); font-family:monospace;">СЕРИЯ #QA-849</span>
+        </div>
+
+        <div class="product-box" id="productBox"></div>
+
+        <div class="tools-panel">
+          <button class="tool-btn active" id="toolNormal" onclick="setScanMode('normal')">
+            <span>💡 Обычный</span>
+            <span style="font-size:9px;">Визуальный</span>
+          </button>
+          <button class="tool-btn locked" id="toolUV" onclick="setScanMode('uv')">
+            <span>🟣 УФ-Лампа</span>
+            <span style="font-size:9px;" id="uvLabel">Купить в шопе</span>
+          </button>
+          <button class="tool-btn locked" id="toolXRay" onclick="setScanMode('xray')">
+            <span>🩻 Рентген</span>
+            <span style="font-size:9px;" id="xrayLabel">Купить в шопе</span>
+          </button>
+        </div>
+
+        <div class="telemetry-row">
+          <div class="telemetry-box">
+            <div class="tele-label" id="t1Name">Ток утечки</div>
+            <div class="tele-val" id="t1Val">0.18 A</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="tele-label" id="t2Name">Сопротивл.</div>
+            <div class="tele-val" id="t2Val">12.0 Ом</div>
+          </div>
+          <div class="telemetry-box">
+            <div class="tele-label" id="t3Name">Маркировка</div>
+            <div class="tele-val" id="t3Val">A17-PRO</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="action-row">
+        <button class="stamp-btn stamp-pass" onclick="makeVerdict(true)">
+          <span>✅ ГОДНО К СБОРКЕ</span>
+          <span style="font-size:9px; opacity:0.85;">Без отклонений</span>
+        </button>
+        <button class="stamp-btn stamp-reject" onclick="makeVerdict(false)">
+          <span>❌ В БРАК (БРАКОВАТЬ)</span>
+          <span style="font-size:9px; opacity:0.85;">Выявлен дефект</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 2. МАГАЗИН ОБОРУДОВАНИЯ -->
+    <div class="screen" id="screen-shop">
+      <div style="width:100%; text-align:center; margin-bottom:10px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--yellow);">🧰 Лабораторный Склад ОТК</h3>
+        <p style="font-size:11px; color:var(--muted); margin-top:2px;">Покупай сканеры, чтобы находить скрытый брак и получать больше премии!</p>
+      </div>
+      <div class="shop-list" id="shopList"></div>
+    </div>
+
+    <!-- 3. КАРЬЕРА -->
+    <div class="screen" id="screen-career">
+      <div style="width:100%; text-align:center; margin-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:800; color:var(--cyan);">📜 Личное Дело Инспектора</h3>
+        <p style="font-size:11px; color:var(--muted); margin-top:2px;">Твой путь от практиканта до Главного Аудитора Корпорации</p>
+      </div>
+
+      <div class="career-card">
+        <div class="career-title">🏭 Цех №1: Мобильная Электроника</div>
+        <div class="career-text">Проверка печатных плат, микросхем процессоров и контактов питания смартфонов.</div>
+      </div>
+      <div class="career-card" style="border-left: 4px solid var(--purple);">
+        <div class="career-title">🚀 Цех №2: Аэрокосмические Дроны</div>
+        <div class="career-text">Открывается с ранга «Ведущий Инженер». Детали навигации и тепловые датчики.</div>
+      </div>
+      <div class="career-card" style="border-left: 4px solid var(--yellow);">
+        <div class="career-title">🌌 Цех №3: Квантовые Процессоры</div>
+        <div class="career-text">Высший уровень допуска. Сверхпроводники и криогенные блоки.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- АКТ ПРОВЕРКИ -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-sheet">
+      <div class="modal-icon" id="mIcon">📝</div>
+      <div class="modal-title" id="mTitle">АКТ КОНТРОЛЯ</div>
+      <div class="modal-desc" id="mText"></div>
+      <button class="modal-confirm-btn" onclick="nextSample()">Следующий образец ➔</button>
+    </div>
+  </div>
+
+  <!-- НАВИГАЦИЯ -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchNav('bench', this)">
+      <span class="icon">🔬</span>
+      Инспекция
+    </button>
+    <button class="nav-item" onclick="switchNav('shop', this)">
+      <span class="icon">🧰</span>
+      Приборы
+    </button>
+    <button class="nav-item" onclick="switchNav('career', this)">
+      <span class="icon">📜</span>
+      Карьера
+    </button>
+  </nav>
+
+  <script>
+    // --- TELEGRAM SDK И ИМЯ ПОЛЬЗОВАТЕЛЯ ---
+    const tg = window.Telegram?.WebApp;
+    let currentUserName = 'Инспектор';
+
+    if (tg) {
+      tg.ready();
+      tg.expand();
+
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        if (user.username) {
+          currentUserName = '@' + user.username;
+        } else if (user.first_name) {
+          currentUserName = user.first_name + (user.last_name ? ' ' + user.last_name : '');
+        }
+      }
+    }
+    document.getElementById('userName').innerText = currentUserName;
+
+    function haptic(type = 'light') {
+      if (tg?.HapticFeedback) {
+        if (type === 'light') tg.HapticFeedback.impactOccurred('light');
+        if (type === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
+        if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+        if (type === 'error') tg.HapticFeedback.notificationOccurred('error');
+      }
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq, type, duration) {
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e){}
+    }
+
+    // --- КАТ-СЦЕНЫ С ИМЕНЕМ ИГРОКА ---
+    const STORY_BEATS = [
+      {
+        avatar: '👨‍🔬',
+        speaker: 'Михалыч (Главный Инженер ОТК)',
+        text: () => `«Ну что, ${currentUserName}? Добро пожаловать в лабораторию качества "КВАНТ-ТЕХ"! Думаешь, контроль качества — это просто штампики ставить? Как бы не так!»`
+      },
+      {
+        avatar: '📦',
+        speaker: 'Михалыч',
+        text: () => '«На наш завод поступила секретная партия чипов для квантовых смартфонов и дронов. Если пропустишь хоть одну трещину или левую маркировку — клиенты вернут партию, а завод оштрафуют на миллионы!»'
+      },
+      {
+        avatar: '🩻',
+        speaker: 'Михалыч',
+        text: () => `«В твоем распоряжении регламент ГОСТ, датчики и спец-сканеры. Смотри в оба, ${currentUserName}, и не подводи отдел! За работу!»`
+      }
+    ];
+    let storyIdx = 0;
+
+    function renderStoryStep() {
+      document.getElementById('storyAvatar').innerText = STORY_BEATS[storyIdx].avatar;
+      document.getElementById('storySpeaker').innerText = STORY_BEATS[storyIdx].speaker;
+      document.getElementById('storyText').innerText = STORY_BEATS[storyIdx].text();
+      if (storyIdx === STORY_BEATS.length - 1) {
+        document.getElementById('storyNextBtn').innerText = 'ПРИНЯТЬ СМЕНУ ➔';
+      }
+    }
+
+    function advanceStory() {
+      storyIdx++;
+      haptic('light');
+      if (storyIdx < STORY_BEATS.length) {
+        renderStoryStep();
+      } else {
+        document.getElementById('storyModal').style.display = 'none';
+        localStorage.setItem('otk_story_seen_v3', 'true');
+      }
+    }
+
+    if (localStorage.getItem('otk_story_seen_v3')) {
+      document.getElementById('storyModal').style.display = 'none';
+    } else {
+      renderStoryStep();
+    }
+
+    // --- ИГРОВОЕ СОСТОЯНИЕ ---
+    let state = {
+      money: 1000,
+      xp: 0,
+      sampleIndex: 1,
+      scanMode: 'normal',
+      hasUV: false,
+      hasXRay: false,
+      multiplier: 1.0
+    };
+
+    const UPGRADES = [
+      {
+        id: 'uv_lamp',
+        name: 'Спектральная УФ-лампа 365нм',
+        desc: 'Проявляет скрытые микротрещины и дефекты компаунда под ультрафиолетом.',
+        icon: '🟣',
+        cost: 1500,
+        type: 'scanner_uv'
+      },
+      {
+        id: 'xray_scan',
+        name: 'Рентген-сканер внутренних слоев',
+        desc: 'Позволяет заглянуть внутрь микросхемы и обнаружить скрытые обрывы дорожек.',
+        icon: '🩻',
+        cost: 3200,
+        type: 'scanner_xray'
+      },
+      {
+        id: 'coffee_tech',
+        name: 'Кофемашина Barista Pro',
+        desc: 'Бодрость для инспектора: +40% к денежной премии за каждый верный вердикт.',
+        icon: '☕',
+        cost: 800,
+        type: 'bonus'
+      },
+      {
+        id: 'gold_stamp',
+        name: 'Позолоченный штамп ОТК',
+        desc: 'Авторитет лаборатории: +100% к премии за выявление скрытого брака.',
+        icon: '⭐',
+        cost: 6000,
+        type: 'bonus_big'
+      }
+    ];
+
+    const PRODUCTS = [
+      {
+        name: 'МАТЕРИНСКАЯ ПЛАТА СМАРТФОНА',
+        gost: 'ГОСТ 23752 / ТУ-402',
+        specHtml: '• Процессор строго <b>A17-PRO</b>.<br>• Ток утечки: <b>0.15 - 0.22 А</b>.<br>• Сопротивление цепи: <b>12.0 Ом</b>.<br>• Под УФ-светом не должно быть свечения клея.',
+        type: 'chip',
+        nominal: { s1: 0.18, s2: 12.0, s3: 'A17-PRO' },
+        sLabels: ['Ток утечки', 'Сопротивл.', 'Чип CPU'],
+        sUnits: [' А', ' Ом', ''],
+        defects: [
+          { type: 'visible_crack', visibility: 'normal', name: 'Скол кристалла CPU' },
+          { type: 'uv_glue', visibility: 'uv', name: 'Избыток флюса и утечка УФ-клея вокруг контактов' },
+          { type: 'xray_break', visibility: 'xray', name: 'Внутренний обрыв шины данных (виден только на рентгене)' },
+          { type: 'sensor_over', visibility: 'sensor', name: 'Превышение тока утечки (0.45 А вместо нормы)' },
+          { type: 'fake_mark', visibility: 'sensor', name: 'Контрафактный чип A15-PRO вместо A17-PRO' }
+        ]
+      },
+      {
+        name: 'БОРТОВОЙ МОДУЛЬ НАВИГАЦИИ ДРОНА',
+        gost: 'ГОСТ РВ 51980 / ТУ-АВИА',
+        specHtml: '• Напряжение питания: <b>4.9 - 5.2 V</b>.<br>• Кварцевый резонатор <b>Q-400</b>.<br>• На рентгене дорожки антенны строго параллельны.<br>• Не допускаются пузыри в заливке компаунда.',
+        type: 'drone_board',
+        nominal: { s1: 5.0, s2: 50.0, s3: 'Q-400' },
+        sLabels: ['Напряжение', 'Частота MHz', 'Резонатор'],
+        sUnits: [' V', ' MHz', ''],
+        defects: [
+          { type: 'visible_burn', visibility: 'normal', name: 'Тепловой прогар защитного диода' },
+          { type: 'uv_bubbles', visibility: 'uv', name: 'Каверны и пузыри в защитном лаке под УФ' },
+          { type: 'xray_short', visibility: 'xray', name: 'Внутреннее замыкание слоев металлизации под чипом' },
+          { type: 'sensor_freq_drop', visibility: 'sensor', name: 'Срыв генерации частоты (18 MHz вместо 50 MHz)' }
+        ]
+      }
+    ];
+
+    let currentItem = null;
+
+    function generateSample() {
+      const prod = PRODUCTS[Math.floor(Math.random() * PRODUCTS.length)];
+      const hasDefect = Math.random() < 0.7;
+      let defect = null;
+
+      if (hasDefect) {
+        defect = prod.defects[Math.floor(Math.random() * prod.defects.length)];
+      }
+
+      let s1 = prod.nominal.s1;
+      let s2 = prod.nominal.s2;
+      let s3 = prod.nominal.s3;
+
+      if (defect && defect.type === 'sensor_over') s1 = 0.45;
+      if (defect && defect.type === 'fake_mark') s3 = 'A15-PRO';
+      if (defect && defect.type === 'sensor_freq_drop') s2 = 18.0;
+
+      currentItem = { prod, hasDefect, defect, s1, s2, s3 };
+
+      document.getElementById('productTitle').innerText = prod.name;
+      document.getElementById('specBody').innerHTML = prod.specHtml;
+      document.getElementById('batchLabel').innerText = `СЕРИЯ #QA-${700 + state.sampleIndex}`;
+
+      document.getElementById('t1Name').innerText = prod.sLabels[0];
+      document.getElementById('t1Val').innerText = s1 + prod.sUnits[0];
+
+      document.getElementById('t2Name').innerText = prod.sLabels[1];
+      document.getElementById('t2Val').innerText = s2 + prod.sUnits[1];
+
+      document.getElementById('t3Name').innerText = prod.sLabels[2];
+      document.getElementById('t3Val').innerText = s3 + prod.sUnits[2];
+
+      renderVisual();
+    }
+
+    function setScanMode(mode) {
+      if (mode === 'uv' && !state.hasUV) {
+        beep(180, 'sawtooth', 0.15);
+        alert('УФ-лампа еще не куплена! Зайди во вкладку «Приборы» и приобрети её.');
+        return;
+      }
+      if (mode === 'xray' && !state.hasXRay) {
+        beep(180, 'sawtooth', 0.15);
+        alert('Рентген-сканер не куплен! Зайди во вкладку «Приборы» и приобрети его.');
+        return;
+      }
+
+      state.scanMode = mode;
+      haptic('light');
+      beep(mode === 'normal' ? 440 : (mode === 'uv' ? 660 : 880), 'sine', 0.08);
+
+      document.getElementById('toolNormal').classList.toggle('active', mode === 'normal');
+      document.getElementById('toolUV').classList.toggle('active', mode === 'uv');
+      document.getElementById('toolXRay').classList.toggle('active', mode === 'xray');
+
+      const bench = document.getElementById('testBench');
+      bench.className = 'test-bench' + (mode === 'uv' ? ' mode-uv' : (mode === 'xray' ? ' mode-xray' : ''));
+
+      renderVisual();
+    }
+
+    function renderVisual() {
+      const box = document.getElementById('productBox');
+      const d = currentItem.defect;
+      const m = state.scanMode;
+
+      let inner = '';
+
+      if (currentItem.prod.type === 'chip') {
+        inner = `
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <rect x="20" y="20" width="140" height="140" rx="14" 
+              fill="${m==='uv' ? '#2e1065' : (m==='xray' ? '#083344' : '#064e3b')}" 
+              stroke="${m==='uv' ? '#c084fc' : (m==='xray' ? '#38bdf8' : '#10b981')}" stroke-width="3"/>
+
+            <path d="M30 40 H70 V70" stroke="${m==='xray' ? '#22d3ee' : '#34d399'}" stroke-width="2" fill="none"/>
+            <path d="M150 140 H110 V110" stroke="${m==='xray' ? '#22d3ee' : '#34d399'}" stroke-width="2" fill="none"/>
+
+            <rect x="55" y="55" width="70" height="70" rx="8" 
+              fill="${m==='xray' ? 'rgba(6,182,212,0.2)' : '#1e293b'}" 
+              stroke="${m==='xray' ? '#06b6d4' : '#64748b'}" stroke-width="2"/>
+
+            <text x="90" y="93" fill="#cbd5e1" font-size="10" font-family="monospace" font-weight="bold" text-anchor="middle">A17-PRO</text>
+            <text x="90" y="106" fill="#facc15" font-size="8" font-family="monospace" text-anchor="middle">OCTA-CORE</text>
+
+            ${(d && d.type === 'visible_crack' && m === 'normal') ? `
+              <path d="M55 65 L70 80 L62 95" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round"/>
+            ` : ''}
+
+            ${(d && d.type === 'uv_glue' && m === 'uv') ? `
+              <circle cx="120" cy="65" r="16" fill="rgba(236, 72, 153, 0.4)" stroke="#f472b6" stroke-width="2"/>
+              <text x="120" y="70" fill="#fff" font-size="8" text-anchor="middle">УФ-КЛЕЙ</text>
+            ` : ''}
+
+            ${(d && d.type === 'xray_break' && m === 'xray') ? `
+              <line x1="75" y1="85" x2="105" y2="85" stroke="#ef4444" stroke-width="4" stroke-dasharray="3,3"/>
+              <circle cx="90" cy="85" r="8" fill="none" stroke="#ef4444" stroke-width="2"/>
+            ` : ''}
+          </svg>
+        `;
+      } else {
+        inner = `
+          <svg width="180" height="180" viewBox="0 0 180 180">
+            <rect x="25" y="25" width="130" height="130" rx="10" 
+              fill="${m==='uv' ? '#3b0764' : (m==='xray' ? '#042f2e' : '#1e293b')}" 
+              stroke="${m==='xray' ? '#2dd4bf' : '#38bdf8'}" stroke-width="3"/>
+
+            <circle cx="90" cy="90" r="32" fill="${m==='xray' ? 'rgba(45,212,191,0.2)' : '#0f172a'}" stroke="#94a3b8" stroke-width="2"/>
+            <text x="90" y="94" fill="#38bdf8" font-size="9" font-family="monospace" text-anchor="middle">GYRO-NAV</text>
+
+            ${(d && d.type === 'visible_burn' && m === 'normal') ? `
+              <circle cx="45" cy="45" r="10" fill="#000" stroke="#ef4444" stroke-width="2"/>
+            ` : ''}
+
+            ${(d && d.type === 'uv_bubbles' && m === 'uv') ? `
+              <circle cx="125" cy="125" r="8" fill="none" stroke="#e879f9" stroke-width="3"/>
+              <circle cx="135" cy="115" r="5" fill="none" stroke="#e879f9" stroke-width="2"/>
+            ` : ''}
+
+            ${(d && d.type === 'xray_short' && m === 'xray') ? `
+              <path d="M80 80 L100 100 M100 80 L80 100" stroke="#ef4444" stroke-width="3"/>
+            ` : ''}
+          </svg>
+        `;
+      }
+
+      box.innerHTML = inner;
+    }
+
+    function makeVerdict(approved) {
+      const isDefective = currentItem.hasDefect;
+      let success = false;
+      let title = '';
+      let desc = '';
+      let icon = '';
+
+      if (!isDefective && approved) {
+        success = true;
+        icon = '✅';
+        title = 'ПАРТИЯ ОДОБРЕНА';
+        desc = `<b>Отличный глазомер, ${currentUserName}!</b> Деталь без дефектов и укладывается во все допуски ГОСТ.<br>Начислена зарплата: <b>+${Math.floor(400 * state.multiplier)} ₽</b>.`;
+        state.money += Math.floor(400 * state.multiplier);
+        state.xp += 15;
+      } else if (isDefective && !approved) {
+        success = true;
+        icon = '🛡️';
+        title = 'БРАК ОБНАРУЖЕН И ОСТАНОВЛЕН!';
+        desc = `<b>В точку, ${currentUserName}!</b> Ты предотвратил отправку брака:<br><span style="color:#ef4444; font-weight:bold;">${currentItem.defect.name}</span>.<br>Премия за бдительность: <b>+${Math.floor(650 * state.multiplier)} ₽</b>.`;
+        state.money += Math.floor(650 * state.multiplier);
+        state.xp += 25;
+      } else if (!isDefective && !approved) {
+        success = false;
+        icon = '⚠️';
+        title = 'ЛОЖНАЯ БРАКОВКА!';
+        desc = `<b>Ошибка инспектора!</b> Деталь была полностью исправна. Завод понес убытки из-за необоснованной остановки линии.<br><span style="color:#facc15;">Штраф за простой: -300 ₽</span>.`;
+        state.money = Math.max(0, state.money - 300);
+      } else if (isDefective && approved) {
+        success = false;
+        icon = '💥';
+        title = 'КАТАСТРОФА: БРАК УШЁЛ В РЕЛИЗ!';
+        desc = `<b>Серьезный выговор, ${currentUserName}!</b> Пропущен критический дефект:<br><span style="color:#ef4444; font-weight:bold;">${currentItem.defect.name}</span>.<br>Клиенты отозвали всю партию.<br><span style="color:#ef4444;">Штраф от руководства: -600 ₽</span>.`;
+        state.money = Math.max(0, state.money - 600);
+      }
+
+      if (success) {
+        beep(540, 'sine', 0.12);
+        setTimeout(() => beep(880, 'sine', 0.2), 100);
+        haptic('success');
+      } else {
+        beep(140, 'sawtooth', 0.3);
+        haptic('error');
+      }
+
+      updateUI();
+      showReport(icon, title, desc, success);
+    }
+
+    function showReport(icon, title, text, success) {
+      document.getElementById('mIcon').innerText = icon;
+      const t = document.getElementById('mTitle');
+      t.innerText = title;
+      t.className = `modal-title ${success ? 'win' : 'fail'}`;
+      document.getElementById('mText').innerHTML = text;
+      document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    function nextSample() {
+      document.getElementById('reportModal').style.display = 'none';
+      state.sampleIndex++;
+      state.scanMode = 'normal';
+      document.getElementById('toolNormal').classList.add('active');
+      document.getElementById('toolUV').classList.remove('active');
+      document.getElementById('toolXRay').classList.remove('active');
+      document.getElementById('testBench').className = 'test-bench';
+      generateSample();
+    }
+
+    function updateUI() {
+      document.getElementById('moneyDisplay').innerText = state.money.toLocaleString('ru-RU') + ' ₽';
+
+      let rank = 'Стажёр ОТК';
+      if (state.xp >= 60) rank = 'Младший Инспектор';
+      if (state.xp >= 160) rank = 'Ведущий Инженер ОТК';
+      if (state.xp >= 400) rank = 'Главный Аудитор Качества';
+      document.getElementById('userRank').innerText = rank;
+
+      renderShop();
+    }
+
+    function renderShop() {
+      const list = document.getElementById('shopList');
+      list.innerHTML = '';
+
+      UPGRADES.forEach(item => {
+        let bought = false;
+        if (item.id === 'uv_lamp' && state.hasUV) bought = true;
+        if (item.id === 'xray_scan' && state.hasXRay) bought = true;
+        if (item.id === 'coffee_tech' && state.multiplier >= 1.4) bought = true;
+        if (item.id === 'gold_stamp' && state.multiplier >= 2.0) bought = true;
+
+        const card = document.createElement('div');
+        card.className = 'shop-card';
+        card.innerHTML = `
+          <div class="shop-info">
+            <div class="shop-icon">${item.icon}</div>
+            <div>
+              <div class="shop-title">${item.name}</div>
+              <div class="shop-desc">${item.desc}</div>
+            </div>
+          </div>
+          <button class="buy-btn" ${bought ? 'disabled' : (state.money < item.cost ? 'disabled' : '')} onclick="buyUpgrade('${item.id}')">
+            ${bought ? 'Куплено' : item.cost.toLocaleString('ru-RU') + ' ₽'}
+          </button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function buyUpgrade(id) {
+      const up = UPGRADES.find(u => u.id === id);
+      if (!up || state.money < up.cost) return;
+
+      state.money -= up.cost;
+      haptic('success');
+      beep(660, 'sine', 0.2);
+
+      if (id === 'uv_lamp') {
+        state.hasUV = true;
+        document.getElementById('toolUV').classList.remove('locked');
+        document.getElementById('uvLabel').innerText = 'Готов к работе';
+      }
+      if (id === 'xray_scan') {
+        state.hasXRay = true;
+        document.getElementById('toolXRay').classList.remove('locked');
+        document.getElementById('xrayLabel').innerText = 'Готов к работе';
+      }
+      if (id === 'coffee_tech') {
+        state.multiplier += 0.4;
+      }
+      if (id === 'gold_stamp') {
+        state.multiplier += 0.6;
+      }
+
+      updateUI();
+      alert(`Успешно приобретено: «${up.name}»!`);
+    }
+
+    function switchNav(tabName, btn) {
+      haptic('light');
+      beep(400, 'triangle', 0.05);
+
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+      document.getElementById('screen-' + tabName).classList.add('active');
+      if (btn) btn.classList.add('active');
+
+      if (tabName === 'shop') renderShop();
+    }
+
+    updateUI();
+    generateSample();
+  </script>
+</body>
+</html>
